@@ -6,10 +6,20 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.006
+     * version    0.007
      * date       2020/01/26
      * 
      *******************************************************************/
+    
+    // define entry point
+    define( 'MWSimpleBot', true );
+    
+    // version check
+    if( version_compare( PHP_VERSION, '7.2.0' ) < 0 ) {
+        
+        die( 'requires php version 7.2.0 or higher' );
+        
+    }
     
     // @var string $endPoint url to api.php
     $endPoint;

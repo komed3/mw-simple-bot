@@ -6,10 +6,17 @@
      * module: Edit
      * 
      * author     komed3
-     * version    0.005
+     * version    0.007
      * date       2020/01/26
      * 
      *******************************************************************/
+    
+    // not a entry point
+    if( !defined( 'MWSimpleBot' ) ) {
+        
+        die( 'no valid entry point' );
+        
+    }
     
     class Edit extends MWSimpleBot {
         
