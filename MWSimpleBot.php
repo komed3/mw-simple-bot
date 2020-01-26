@@ -6,18 +6,18 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.004
+     * version    0.005
      * date       2020/01/26
      * 
      *******************************************************************/
     
+    // @var string $endPoint url to api.php
+    $endPoint;
+    
     class MWSimpleBot {
         
-        // @var string $endPoint url to api.php
-        protected $endPoint;
-        
         // @var string $botUsername
-        public $botUsername;
+        private $botUsername;
         
         // @var string $botPassword
         private $botPassword;
@@ -29,26 +29,62 @@
         // @param string $botUsername
         // @param string $botPassword
         function __construct(
-            string $endPoint,
-            string $botUsername,
-            string $botPassword
+            string $endPoint = '',
+            string $botUsername = '',
+            string $botPassword = ''
         ) {
             
             $this->status( 'MWSimpleBot started' );
             
-            $this->endPoint = $endPoint;
+            if( strlen( $endPoint ) > 0 ) {
+                
+                $this->setEndPoint( $endPoint );
+                
+            }
+            
+            if( strlen( $botUsername ) > 0 && strlen( $botPassword ) > 0 ) {
+                
+                $this->setBotUser( $botUsername, $botPassword );
+                
+            }
+            
+        }
+        
+        // @param string $url
+        // @return bool true
+        public function setEndPoint(
+            string $url
+        ) {
+            
+            global $endPoint;
+            
+            $endPoint = $url;
+            
+            $this->checkAccess( true );
+            
+            return true;
+            
+        }
+        
+        // @param string $botUsername
+        // @param string $botPassword
+        // @return bool true
+        public function setBotUser(
+            string $botUsername,
+            string $botPassword
+        ) {
             
             $this->botUsername = $botUsername;
             
             $this->botPassword = $botPassword;
             
-            $this->checkAccess();
+            return true;
             
         }
         
         // @param string $msg status message
         // @return bool true
-        private function status(
+        protected function status(
             string $msg
         ) {
             
@@ -60,18 +96,30 @@
             
         }
         
+        // @param bool $abort
         // @return bool
-        private function checkAccess() {
+        protected function checkAccess(
+            bool $abort = false
+        ) {
             
-            $headers = @get_headers( $this->endPoint );
+            global $endPoint;
+            
+            $headers = @get_headers( $endPoint );
             
             if( !$headers || !strpos( $headers[0], '200' ) ) {
                 
                 $this->status( 'ERROR' );
-                $this->status( $this->endPoint . ' not responding' );
-                $this->status( 'abort script' );
+                $this->status( $endPoint . ' not responding' );
                 
-                exit;
+                if( $abort ) {
+                    
+                    $this->status( 'abort script' );
+                    
+                    exit;
+                    
+                }
+                
+                return false;
                 
             } else {
                 
@@ -87,7 +135,11 @@
             string $tokenType = 'csrf'
         ) {
             
+            global $endPoint;
+            
             $this->status( 'get ' . $tokenType . ' token' );
+            
+            $this->checkAccess();
             
             $params = [
                 'action' => 'query',
@@ -96,7 +148,7 @@
                 'type' =>   $tokenType
             ];
             
-            $url = $this->endPoint . '?' . http_build_query( $params );
+            $url = $endPoint . '?' . http_build_query( $params );
             
             $ch = curl_init( $url );
             
@@ -126,9 +178,11 @@
         
         // @param array $params
         // @return mixed output
-        private function doRequest(
+        protected function doRequest(
             array $params
         ) {
+            
+            global $endPoint;
             
             $this->status( 'try request' . ( isset( $params['action'] ) ? ' action=' . $params['action'] : '' ) );
             
@@ -136,7 +190,7 @@
             
             $ch = curl_init();
             
-            curl_setopt( $ch, CURLOPT_URL, $this->endPoint );
+            curl_setopt( $ch, CURLOPT_URL, $endPoint );
             curl_setopt( $ch, CURLOPT_POST, true );
             curl_setopt( $ch, CURLOPT_POSTFIELDS, http_build_query( $params ) );
             curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
@@ -153,7 +207,7 @@
         
         // @param array $result
         // @param string $successMsg
-        private function requestStatus(
+        protected function requestStatus(
             array $result,
             string $successMsg = ''
         ) {

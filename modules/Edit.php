@@ -6,7 +6,7 @@
      * module: Edit
      * 
      * author     komed3
-     * version    0.004
+     * version    0.005
      * date       2020/01/26
      * 
      *******************************************************************/
@@ -27,9 +27,6 @@
         //    bool $minor
         //    bool $bot
         //    bool $notminor
-        //    bool $recreate
-        //    bool $createonly
-        //    bool $nocreate
         //    string $hash [md5 hash]
         // @return bool|array result
         public function appendText(
@@ -43,20 +40,18 @@
             }
             
             $requestParams = [
+                'action' =>     'edit',
                 'title' =>      $params[0],
                 'appendtext' => $params[1],
                 'summary' =>    ( isset( $params[2] ) ? $params[2] : 'edit by MWSimpleBot action' ),
                 'minor' =>      ( isset( $params[3] ) ? $params[3] : false ),
                 'bot' =>        ( isset( $params[4] ) ? $params[4] : true ),
-                'notminor' =>   ( isset( $params[5] ) ? $params[5] : true ),
-                'recreate' =>   ( isset( $params[6] ) ? $params[6] : true ),
-                'createonly' => ( isset( $params[7] ) ? $params[7] : false ),
-                'nocreate' =>   ( isset( $params[8] ) ? $params[8] : false )
+                'notminor' =>   ( isset( $params[5] ) ? $params[5] : true )
             ];
             
-            if( isset( $params[9] ) ) {
+            if( isset( $params[6] ) ) {
                 
-                $requestParams['md5'] = $params[9];
+                $requestParams['md5'] = $params[6];
                 
             }
             
