@@ -395,9 +395,9 @@
         }
         
         // @return array with loaded modules
-        // @param ... string $modules
+        // @param string ... $modules
         public function loadModule(
-            ... $modules
+            string ... $modules
         ) {
             
             foreach( $modules as $module ) {
