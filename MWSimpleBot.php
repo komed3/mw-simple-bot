@@ -6,13 +6,16 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.005
+     * version    0.006
      * date       2020/01/26
      * 
      *******************************************************************/
     
     // @var string $endPoint url to api.php
     $endPoint;
+    
+    // @var bool $debug output status messages
+    $debug = true;
     
     class MWSimpleBot {
         
@@ -82,15 +85,37 @@
             
         }
         
+        // @param bool $newDebug
+        // @return bool true
+        public function setDebug(
+            bool $newDebug = true
+        ) {
+            
+            global $debug;
+            
+            $debug = $newDebug;
+            
+            $this->status( 'enable status messages' );
+            
+            return true;
+            
+        }
+        
         // @param string $msg status message
         // @return bool true
         protected function status(
             string $msg
         ) {
             
-            $datetime = new DateTime();
+            global $debug;
             
-            print '[' . $datetime->format( 'H:i:s.v' ) . '] ' . $msg . PHP_EOL;
+            if( $debug ) {
+                
+                $datetime = new DateTime();
+                
+                print '[' . $datetime->format( 'H:i:s.v' ) . '] ' . $msg . PHP_EOL;
+                
+            }
             
             return true;
             
@@ -122,6 +147,33 @@
                 return false;
                 
             } else {
+                
+                return true;
+                
+            }
+            
+        }
+        
+        // @param mixed $result
+        // @return bool
+        public function checkStatus(
+            $result
+        ) {
+            
+            if(
+                is_null( $result ) ||
+                !is_array( $result ) ||
+                isset( $result['error'] ) ||
+                isset( $result['warnings'] )
+            ) {
+                
+                $this->status( 'check status: error/warning detected' );
+                
+                return false;
+                
+            } else {
+                
+                $this->status( 'check status: success detected' );
                 
                 return true;
                 
@@ -300,6 +352,38 @@
             
         }
         
+        // @param array $params
+        // @param mixed $requireToken
+        // @return array
+        public function request(
+            array $params,
+            $requireToken = false
+        ) {
+            
+            if( $requireToken != false ) {
+                
+                $params['token'] = $this->getToken(
+                    is_string( $requireToken ) ? $requireToken : 'csrf'
+                );
+                
+                if( $params['token'] == false ) {
+                    
+                    $this->status( 'error: request aborted, because token assumed' );
+                    
+                    return false;
+                    
+                }
+                
+            }
+            
+            $result = $this->doRequest( $params );
+            
+            $this->requestStatus( $result );
+            
+            return $result;
+            
+        }
+        
         // @return array with loaded modules
         // @param ... string $modules
         public function loadModule(
@@ -351,38 +435,6 @@
             }
             
             return $this->loadedModules;
-            
-        }
-        
-        // @param array $params
-        // @param mixed $requireToken
-        // @return array
-        public function request(
-            array $params,
-            $requireToken = false
-        ) {
-            
-            if( $requireToken != false ) {
-                
-                $params['token'] = $this->getToken(
-                    is_string( $requireToken ) ? $requireToken : 'csrf'
-                );
-                
-                if( $params['token'] == false ) {
-                    
-                    $this->status( 'error: request aborted, because token assumed' );
-                    
-                    return false;
-                    
-                }
-                
-            }
-            
-            $result = $this->doRequest( $params );
-            
-            $this->requestStatus( $result );
-            
-            return $result;
             
         }
         
