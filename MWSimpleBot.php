@@ -6,7 +6,7 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.001
+     * version    0.002
      * date       2020/01/26
      * 
      *******************************************************************/
@@ -138,6 +138,41 @@
             
         }
         
+        // @param array $result
+        // @param string $successMsg
+        private function requestStatus(
+            array $result,
+            string $successMsg = ''
+        ) {
+            
+            if( isset( $result['error'] ) ) {
+                
+                $this->status( 'error: ' . $result['error']['code'] );
+                $this->status( 'error info: ' . $result['error']['info'] );
+                
+            } else if( isset( $result['warnings'] ) ) {
+                
+                $module = array_key_first( $result['warnings'] );
+                
+                $this->status( 'warning occurred in module ' . $module );
+                $this->status( 'warning info: ' . $result['warnings'][ $module ]['*'] );
+                
+            } else {
+                
+                $this->status( 'success' );
+                
+                if( strlen( $successMsg ) > 0 ) {
+                    
+                    $this->status( $successMsg );
+                    
+                }
+                
+            }
+            
+        }
+        
+        // @return bool
+        // abort script on error
         public function login() {
             
             $this->status( 'try login' );
@@ -149,7 +184,7 @@
             
             if( isset( $result['query']['userinfo']['id'] ) ) {
                 
-                $this->status( 'SUCCESS' );
+                $this->status( 'success' );
                 $this->status( 'logged in as ' . $result['query']['userinfo']['name'] );
                 
                 return true;
@@ -165,7 +200,7 @@
             
             if( isset( $result['login']['result'] ) && $result['login']['result'] == 'Success' ) {
                 
-                $this->status( 'SUCCESS' );
+                $this->status( 'success' );
                 $this->status( 'logged in as ' . $result['login']['lgusername'] );
                 
                 return true;
@@ -182,25 +217,28 @@
             
         }
         
+        // @return array
         public function logout() {
             
             $this->status( 'logout' );
             
             $result = $this->doRequest( [
-                'action' =>   'logout',
-                'token' =>    $this->getToken()
+                'action' =>   'logout'/*,
+                'token' =>    $this->getToken()*/
             ] );
             
-            $this->status( 'user was logged out' );
+            $this->requestStatus( $result, 'user was logged out' );
             
             return $result;
             
         }
         
+        // @param array $params
+        // @return mixed $requireToken
+        // @return array
         public function request(
             array $params,
-            $requireToken = false,
-            string $format = 'json'
+            $requireToken = false
         ) {
             
             if( $requireToken != false ) {
@@ -211,28 +249,9 @@
                 
             }
             
-            $result = $this->doRequest(
-                $params,
-                $format
-            );
+            $result = $this->doRequest( $params );
             
-            if( isset( $result['error'] ) ) {
-                
-                $this->status( 'error: ' . $result['error']['code'] );
-                $this->status( 'error info: ' . $result['error']['info'] );
-                
-            } else if( isset( $result['warnings'] ) ) {
-                
-                $module = array_key_first( $result['warnings'] );
-                
-                $this->status( 'warning occurred in module ' . $module );
-                $this->status( 'warning info: ' . $result[ $module ]['*'] );
-                
-            } else {
-                
-                $this->status( 'success' );
-                
-            }
+            $this->requestStatus( $result );
             
             return $result;
             
