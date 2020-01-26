@@ -6,7 +6,7 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.003
+     * version    0.004
      * date       2020/01/26
      * 
      *******************************************************************/
@@ -14,16 +14,16 @@
     class MWSimpleBot {
         
         // @var string $endPoint url to api.php
-        private $endPoint;
+        protected $endPoint;
         
         // @var string $botUsername
         public $botUsername;
         
         // @var string $botPassword
-        protected $botPassword;
+        private $botPassword;
         
         // @var array $loadedModules
-        private $loadedModules = [];
+        protected $loadedModules = [];
         
         // @param string $endPoint
         // @param string $botUsername
@@ -83,7 +83,7 @@
         
         // @param string $tokenType [createaccount, csrf, login, patrol, rollback, userrights, watch]
         // @return string token
-        private function getToken(
+        protected function getToken(
             string $tokenType = 'csrf'
         ) {
             
@@ -110,7 +110,17 @@
             
             $result = json_decode( $output, true );
             
-            return $result['query']['tokens'][ $tokenType . 'token'];
+            if( is_null( $result ) ) {
+                
+                $this->status( 'error: fetching token failed' );
+                
+                return false;
+                
+            } else {
+                
+                return $result['query']['tokens'][ $tokenType . 'token'];
+                
+            }
             
         }
         
@@ -291,7 +301,7 @@
         }
         
         // @param array $params
-        // @return mixed $requireToken
+        // @param mixed $requireToken
         // @return array
         public function request(
             array $params,
@@ -304,6 +314,14 @@
                     is_string( $requireToken ) ? $requireToken : 'csrf'
                 );
                 
+                if( $params['token'] == false ) {
+                    
+                    $this->status( 'error: request aborted, because token assumed' );
+                    
+                    return false;
+                    
+                }
+                
             }
             
             $result = $this->doRequest( $params );
@@ -311,6 +329,87 @@
             $this->requestStatus( $result );
             
             return $result;
+            
+        }
+        
+        // @param string $module
+        // @param string $function
+        // @param mixed $params
+        // @return bool|array
+        public function mf(
+            string $module,
+            string $method,
+            ... $params
+        ) {
+            
+            $this->status( 'try ' . $module . ' > ' . $method );
+            
+            if( !in_array(
+                $module,
+                $this->loadedModules
+            ) ) {
+                
+                $this->status( 'module ' . $module . ' not loaded' );
+                $this->status( 'try autoload module ' . $module );
+                
+                $this->loadModule( $module );
+                
+                if( !in_array(
+                    $module,
+                    $this->loadedModules
+                ) ) {
+                    
+                    $this->status( 'error: autoload failed' );
+                    
+                    return false;
+                    
+                } else {
+                    
+                    $this->status( 'module ' . $module . ' autoloaded successfully' );
+                    
+                    $this->mf( $module, $method, $params );
+                    
+                }
+                
+            } else {
+                
+                $m = new $module();
+                
+                if( !method_exists( $m, $method ) ) {
+                    
+                    $this->status( 'error: method ' . $method . ' of module ' . $module . ' not defined' );
+                    
+                    return false;
+                    
+                } else {
+                   
+                    return $m->$method( $params[0] );
+                    
+                }
+                
+            }
+            
+        }
+        
+        // @param array $params
+        // @param int $cnt
+        // @return bool
+        public function checkParams(
+            array $params,
+            int $cnt
+        ) {
+            
+            if( count( $params ) >= $cnt ) {
+                
+                return true;
+                
+            } else {
+                
+                $this->status( 'warning: required parameters not available' );
+                
+                return false;
+                
+            }
             
         }
         
