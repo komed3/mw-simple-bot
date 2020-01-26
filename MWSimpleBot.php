@@ -11,7 +11,7 @@
      * 
      *******************************************************************/
     
-    // define entry point
+    // define MWSimpleBot entry point
     define( 'MWSimpleBot', true );
     
     // version check
