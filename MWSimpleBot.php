@@ -6,7 +6,7 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.002
+     * version    0.003
      * date       2020/01/26
      * 
      *******************************************************************/
@@ -21,6 +21,9 @@
         
         // @var string $botPassword
         protected $botPassword;
+        
+        // @var array $loadedModules
+        private $loadedModules = [];
         
         // @param string $endPoint
         // @param string $botUsername
@@ -230,6 +233,60 @@
             $this->requestStatus( $result, 'user was logged out' );
             
             return $result;
+            
+        }
+        
+        // @return array with loaded modules
+        // @param ... string $modules
+        public function loadModule(
+            ... $modules
+        ) {
+            
+            foreach( $modules as $module ) {
+                
+                if( in_array(
+                    $module,
+                    $this->loadedModules
+                ) ) {
+                    
+                    $this->status( 'skip already loaded module ' . $module );
+                    
+                    continue;
+                    
+                }
+                
+                $this->status( 'try loading module ' . $module );
+                
+                if( !file_exists( __DIR__ . '/modules/' . $module . '.php' ) ) {
+                    
+                    $this->status( 'error: module ' . $module . ' could not found' );
+                    
+                    continue;
+                    
+                } else {
+                    
+                    require_once( __DIR__ . '/modules/' . $module . '.php' );
+                    
+                    $this->status( 'module ' . $module . ' loaded' );
+                    $this->status( 'try starting module ' . $module );
+                    
+                    if( new $module() ) {
+                        
+                        $this->loadedModules[] = $module;
+                        
+                        $this->status( 'module ' . $module . ' started successfully' );
+                        
+                    } else {
+                        
+                        $this->status( 'error: module ' . $module . ' could not started' );
+                        
+                    }
+                    
+                }
+                
+            }
+            
+            return $this->loadedModules;
             
         }
         
