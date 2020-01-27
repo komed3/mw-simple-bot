@@ -7,7 +7,7 @@
      * 
      * author     komed3
      * version    0.010 alpha
-     * date       2020/01/26
+     * date       2020/01/27
      * 
      *******************************************************************/
     
@@ -255,7 +255,7 @@
         // @since build 0.010 alpha
         // @param null|string $versionToCompare
         // @return bool|string
-        protected function checkMWVersion(
+        public function checkMWVersion(
             $versionToCompare = null
         ) {
             
