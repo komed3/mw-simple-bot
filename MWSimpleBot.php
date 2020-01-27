@@ -11,7 +11,7 @@
      * 
      *******************************************************************/
     
-    // define MWSimpleBot entry point
+    // define entry point
     define( 'MWSimpleBot', true );
     
     // version check
@@ -79,7 +79,7 @@
             
             $endPoint = $url;
             
-            $this->checkAccess( true );
+            $this->checkEndPoint( true );
             
             return true;
             
@@ -179,7 +179,7 @@
         
         // @param bool $abort
         // @return bool
-        protected function checkAccess(
+        protected function checkEndPoint(
             bool $abort = false
         ) {
             
@@ -212,7 +212,7 @@
         
         // @param mixed $result
         // @return bool
-        public function checkStatus(
+        public function status(
             $result
         ) {
             
@@ -223,13 +223,13 @@
                 isset( $result['warnings'] )
             ) {
                 
-                $this->log( 'check status: error/warning detected' );
+                $this->log( 'warning: request returned error/warning' );
                 
                 return false;
                 
             } else {
                 
-                $this->log( 'check status: success detected' );
+                $this->log( 'success: request has not returned any errors' );
                 
                 return true;
                 
@@ -247,7 +247,7 @@
             
             $this->log( 'get ' . $tokenType . ' token' );
             
-            $this->checkAccess();
+            $this->checkEndPoint();
             
             $params = [
                 'action' => 'query',
