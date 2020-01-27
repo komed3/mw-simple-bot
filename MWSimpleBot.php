@@ -198,11 +198,17 @@
                 
                 $this->logging( 'write log file ' . $pathToLogFile );
                 
+                fwrite( $file, '@ MWSimpleBot' . PHP_EOL .
+                               '@ build ' . MWSimpleBot . PHP_EOL .
+                               '@ automatically created log file at ' . date( 'Y-m-d H:i:s' ) . PHP_EOL );
+                
                 foreach( $logging as $log ) {
                     
                     fwrite( $file, $log );
                     
                 }
+                
+                fwrite( $file, '@ END' . PHP_EOL . PHP_EOL );
                 
                 fclose( $file );
                 
