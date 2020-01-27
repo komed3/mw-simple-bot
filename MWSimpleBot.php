@@ -6,7 +6,7 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.007
+     * version    0.008
      * date       2020/01/26
      * 
      *******************************************************************/
@@ -24,8 +24,14 @@
     // @var string $endPoint url to api.php
     $endPoint;
     
-    // @var bool $debug output status messages
-    $debug = true;
+    // @var array $logging
+    $logging = [];
+    
+    // @var string $logMode
+    $logMode = 'text';
+    
+    // @var string $logFilePath
+    $logFilePath = __DIR__ . '/log_' . date( 'ymdHis' ) . '.log';
     
     class MWSimpleBot {
         
@@ -47,7 +53,7 @@
             string $botPassword = ''
         ) {
             
-            $this->status( 'MWSimpleBot started' );
+            $this->log( 'MWSimpleBot started' );
             
             if( strlen( $endPoint ) > 0 ) {
                 
@@ -95,35 +101,75 @@
             
         }
         
-        // @param bool $newDebug
-        // @return bool true
-        public function setDebug(
-            bool $newDebug = true
+        // @param string $newLogMode [text, file, both, off]
+        // @param string $pathToLogFile
+        // @return bool
+        public function setLogMode(
+            string $newLogMode = 'text',
+            string $pathToLogFile = ''
         ) {
             
-            global $debug;
+            global $logMode, $logFilePath;
             
-            $debug = $newDebug;
-            
-            $this->status( 'enable status messages' );
+            if( !in_array(
+                $newLogMode,
+                [ 'text', 'file', 'both', 'off' ]
+            ) ) {
+                
+                $this->log( 'error: set log mode to ' . $newLogMode . ' failed' );
+                $this->log( 'log mode remains ' . $logMode );
+                
+                return false;
+                
+            } else if( $newLogMode != $logMode ) {
+                
+                $logMode = $newLogMode;
+                
+                $this->log( 'success: set log mode to ' . $logMode );
+                
+                if( in_array( $logMode, [ 'file', 'both' ] ) && strlen( $pathToLogFile ) ) {
+                    
+                    $logFilePath = $pathToLogFile;
+                    
+                    $this->log( 'success: set new path to log file' );
+                    
+                }
+                
+            }
             
             return true;
             
         }
         
-        // @param string $msg status message
+        // @param string $msg logging message
         // @return bool true
-        protected function status(
+        protected function log(
             string $msg
         ) {
             
-            global $debug;
+            global $logging, $logMode, $logFilePath;
             
-            if( $debug ) {
+            if( in_array( $logMode, [ 'text', 'file', 'both' ] ) ) {
                 
                 $datetime = new DateTime();
                 
-                print '[' . $datetime->format( 'H:i:s.v' ) . '] ' . $msg . PHP_EOL;
+                $logging[] = '[' . $datetime->format( 'H:i:s.v' ) . '] ' . $msg . PHP_EOL;
+                
+                if( in_array( $logMode, [ 'text', 'both' ] ) ) {
+                    
+                    print $logging[ ( count( $logging ) - 1 ) ];
+                    
+                }
+                
+                if( in_array( $logMode, [ 'file', 'both' ] ) ) {
+                    
+                    $file = fopen( $logFilePath, 'a' );
+                    
+                    fwrite( $file, $logging[ ( count( $logging ) - 1 ) ] );
+                    
+                    fclose( $file );
+                    
+                }
                 
             }
             
@@ -143,12 +189,12 @@
             
             if( !$headers || !strpos( $headers[0], '200' ) ) {
                 
-                $this->status( 'ERROR' );
-                $this->status( $endPoint . ' not responding' );
+                $this->log( 'ERROR' );
+                $this->log( $endPoint . ' not responding' );
                 
                 if( $abort ) {
                     
-                    $this->status( 'abort script' );
+                    $this->log( 'abort script' );
                     
                     exit;
                     
@@ -177,13 +223,13 @@
                 isset( $result['warnings'] )
             ) {
                 
-                $this->status( 'check status: error/warning detected' );
+                $this->log( 'check status: error/warning detected' );
                 
                 return false;
                 
             } else {
                 
-                $this->status( 'check status: success detected' );
+                $this->log( 'check status: success detected' );
                 
                 return true;
                 
@@ -199,7 +245,7 @@
             
             global $endPoint;
             
-            $this->status( 'get ' . $tokenType . ' token' );
+            $this->log( 'get ' . $tokenType . ' token' );
             
             $this->checkAccess();
             
@@ -226,7 +272,7 @@
             
             if( is_null( $result ) ) {
                 
-                $this->status( 'error: fetching token failed' );
+                $this->log( 'error: fetching token failed' );
                 
                 return false;
                 
@@ -246,7 +292,7 @@
             
             global $endPoint;
             
-            $this->status( 'try request' . ( isset( $params['action'] ) ? ' action=' . $params['action'] : '' ) );
+            $this->log( 'try request' . ( isset( $params['action'] ) ? ' action=' . $params['action'] : '' ) );
             
             $params['format'] = 'json';
             
@@ -276,23 +322,23 @@
             
             if( isset( $result['error'] ) ) {
                 
-                $this->status( 'error: ' . $result['error']['code'] );
-                $this->status( 'error info: ' . $result['error']['info'] );
+                $this->log( 'error: ' . $result['error']['code'] );
+                $this->log( 'error info: ' . $result['error']['info'] );
                 
             } else if( isset( $result['warnings'] ) ) {
                 
                 $module = array_key_first( $result['warnings'] );
                 
-                $this->status( 'warning occurred in module ' . $module );
-                $this->status( 'warning info: ' . $result['warnings'][ $module ]['*'] );
+                $this->log( 'warning occurred in module ' . $module );
+                $this->log( 'warning info: ' . $result['warnings'][ $module ]['*'] );
                 
             } else {
                 
-                $this->status( 'success' );
+                $this->log( 'success' );
                 
                 if( strlen( $successMsg ) > 0 ) {
                     
-                    $this->status( $successMsg );
+                    $this->log( $successMsg );
                     
                 }
                 
@@ -304,7 +350,7 @@
         // abort script on error
         public function login() {
             
-            $this->status( 'try login' );
+            $this->log( 'try login' );
             
             $result = $this->doRequest( [
                 'action' => 'query',
@@ -313,8 +359,8 @@
             
             if( isset( $result['query']['userinfo']['id'] ) ) {
                 
-                $this->status( 'success' );
-                $this->status( 'logged in as ' . $result['query']['userinfo']['name'] );
+                $this->log( 'success' );
+                $this->log( 'logged in as ' . $result['query']['userinfo']['name'] );
                 
                 return true;
                 
@@ -329,16 +375,16 @@
             
             if( isset( $result['login']['result'] ) && $result['login']['result'] == 'Success' ) {
                 
-                $this->status( 'success' );
-                $this->status( 'logged in as ' . $result['login']['lgusername'] );
+                $this->log( 'success' );
+                $this->log( 'logged in as ' . $result['login']['lgusername'] );
                 
                 return true;
                 
             } else {
                 
-                $this->status( 'ERROR' );
-                $this->status( 'login failed' );
-                $this->status( 'abort script' );
+                $this->log( 'ERROR' );
+                $this->log( 'login failed' );
+                $this->log( 'abort script' );
                 
                 exit;
                 
@@ -349,7 +395,7 @@
         // @return array
         public function logout() {
             
-            $this->status( 'logout' );
+            $this->log( 'logout' );
             
             $result = $this->doRequest( [
                 'action' =>   'logout'/*,
@@ -378,7 +424,7 @@
                 
                 if( $params['token'] == false ) {
                     
-                    $this->status( 'error: request aborted, because token assumed' );
+                    $this->log( 'error: request aborted, because token assumed' );
                     
                     return false;
                     
@@ -407,17 +453,17 @@
                     $this->loadedModules
                 ) ) {
                     
-                    $this->status( 'skip already loaded module ' . $module );
+                    $this->log( 'skip already loaded module ' . $module );
                     
                     continue;
                     
                 }
                 
-                $this->status( 'try loading module ' . $module );
+                $this->log( 'try loading module ' . $module );
                 
                 if( !file_exists( __DIR__ . '/modules/' . $module . '.php' ) ) {
                     
-                    $this->status( 'error: module ' . $module . ' could not found' );
+                    $this->log( 'error: module ' . $module . ' could not found' );
                     
                     continue;
                     
@@ -425,18 +471,18 @@
                     
                     require_once( __DIR__ . '/modules/' . $module . '.php' );
                     
-                    $this->status( 'module ' . $module . ' loaded' );
-                    $this->status( 'try starting module ' . $module );
+                    $this->log( 'module ' . $module . ' loaded' );
+                    $this->log( 'try starting module ' . $module );
                     
                     if( new $module() ) {
                         
                         $this->loadedModules[] = $module;
                         
-                        $this->status( 'module ' . $module . ' started successfully' );
+                        $this->log( 'module ' . $module . ' started successfully' );
                         
                     } else {
                         
-                        $this->status( 'error: module ' . $module . ' could not started' );
+                        $this->log( 'error: module ' . $module . ' could not started' );
                         
                     }
                     
@@ -458,15 +504,15 @@
             ... $params
         ) {
             
-            $this->status( 'try ' . $module . ' > ' . $method );
+            $this->log( 'try ' . $module . ' > ' . $method );
             
             if( !in_array(
                 $module,
                 $this->loadedModules
             ) ) {
                 
-                $this->status( 'module ' . $module . ' not loaded' );
-                $this->status( 'try autoload module ' . $module );
+                $this->log( 'module ' . $module . ' not loaded' );
+                $this->log( 'try autoload module ' . $module );
                 
                 $this->loadModule( $module );
                 
@@ -475,13 +521,13 @@
                     $this->loadedModules
                 ) ) {
                     
-                    $this->status( 'error: autoload failed' );
+                    $this->log( 'error: autoload failed' );
                     
                     return false;
                     
                 } else {
                     
-                    $this->status( 'module ' . $module . ' autoloaded successfully' );
+                    $this->log( 'module ' . $module . ' autoloaded successfully' );
                     
                     $this->mf( $module, $method, $params );
                     
@@ -493,7 +539,7 @@
                 
                 if( !method_exists( $m, $method ) ) {
                     
-                    $this->status( 'error: method ' . $method . ' of module ' . $module . ' not defined' );
+                    $this->log( 'error: method ' . $method . ' of module ' . $module . ' not defined' );
                     
                     return false;
                     
@@ -521,7 +567,7 @@
                 
             } else {
                 
-                $this->status( 'warning: required parameters not available' );
+                $this->log( 'warning: required parameters not available' );
                 
                 return false;
                 
