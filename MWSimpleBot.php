@@ -2,17 +2,17 @@
     
     /*******************************************************************
      * 
-     * MWSimpleBot [ALPHA]
+     * MWSimpleBot
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.009
+     * version    0.010 alpha
      * date       2020/01/26
      * 
      *******************************************************************/
     
     // define entry point
-    define( 'MWSimpleBot', true );
+    define( 'MWSimpleBot', '0.010 alpha' );
     
     // version check
     if( version_compare( PHP_VERSION, '7.2.0' ) < 0 ) {
@@ -53,7 +53,7 @@
             string $botPassword = ''
         ) {
             
-            $this->logging( 'MWSimpleBot started' );
+            $this->logging( 'MWSimpleBot build ' . MWSimpleBot . ' started' );
             
             if( strlen( $endPoint ) > 0 ) {
                 
@@ -252,6 +252,41 @@
             
         }
         
+        // @since build 0.010 alpha
+        // @param null|string $versionToCompare
+        // @return bool|string
+        protected function checkMWVersion(
+            $versionToCompare = null
+        ) {
+            
+            $this->logging( 'check MediaWiki version' );
+            
+            if( $this->status( $res = $this->doRequest( [
+                'action' => 'query',
+                'meta' =>   'siteinfo',
+                'siprop' => 'general'
+            ] ) ) ) {
+                
+                $version = preg_replace( '/[^0-9\.]/', '', $res['query']['general']['generator'] );
+                
+                $this->logging( 'MediaWiki has version ' . $version );
+                
+                if( is_null( $versionToCompare ) ) {
+                    
+                    return $version;
+                    
+                } else if( version_compare( $version, $versionToCompare ) >= 0 ) {
+                    
+                    return true;
+                    
+                }
+                
+            }
+            
+            return false;
+            
+        }
+        
         // @param mixed $result
         // @return bool
         public function status(
@@ -439,10 +474,21 @@
             
             $this->logging( 'logout' );
             
-            $result = $this->doRequest( [
-                'action' =>   'logout'/*,
-                'token' =>    $this->getToken()*/
-            ] );
+            // since MediaWiki 1.34.0 a token is required
+            if( $this->checkMWVersion( '1.34.0' ) ) {
+                
+                $result = $this->doRequest( [
+                    'action' =>   'logout',
+                    'token' =>    $this->getToken()
+                ] );
+                
+            } else {
+                
+                $result = $this->doRequest( [
+                    'action' =>   'logout'
+                ] );
+                
+            }
             
             $this->requestStatus( $result, 'user was logged out' );
             
