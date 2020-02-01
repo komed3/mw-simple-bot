@@ -6,8 +6,8 @@
      * MediaWiki Bot class
      * 
      * author     komed3
-     * version    0.010 alpha
-     * date       2020/01/27
+     * version    0.011 alpha
+     * date       2020/02/01
      * 
      *******************************************************************/
     
@@ -22,7 +22,7 @@
     }
     
     // @var string $endPoint url to api.php
-    $endPoint;
+    $endPoint = '';
     
     // @var array $logging
     $logging = [];
@@ -46,12 +46,20 @@
         
         // @param string $endPoint
         // @param string $botUsername
-        // @param string $botPassword
+        // @param string $botPassword,
+        // @param string $logMode [text, file, both, off]
         function __construct(
             string $endPoint = '',
             string $botUsername = '',
-            string $botPassword = ''
+            string $botPassword = '',
+            string $logMode = '';
         ) {
+            
+            if( strlen( $logMode ) > 0 ) {
+                
+                $this->setLogMode( $logMode );
+                
+            }
             
             $this->logging( 'MWSimpleBot build ' . MWSimpleBot . ' started' );
             
